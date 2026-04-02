@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
         userInput.style.height = userInput.scrollHeight + 'px';
     });
 
-    // Send message on Enter (but allow Shift+Enter for new line)
+    // Send message on Enter
     userInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -29,74 +29,102 @@ document.addEventListener('DOMContentLoaded', () => {
         const text = userInput.value.trim();
         if (!text) return;
 
-        // Add user message to UI
         addMessage(text, 'user');
-        
-        // Reset input
         userInput.value = '';
         userInput.style.height = 'auto';
 
-        // Show typing indicator
         const typingId = showTypingIndicator();
         
         try {
             const response = await fetch(N8N_WEBHOOK_URL, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message: text })
             });
 
             if (!response.ok) {
                 removeTypingIndicator(typingId);
-                throw new Error('Network response was not ok');
+                const errorData = await response.text();
+                console.error('n8n Error:', errorData);
+                throw new Error(`Server returned ${response.status}`);
             }
 
             const data = await response.json();
-            
-            // Remove typing indicator before showing response
             removeTypingIndicator(typingId);
             
-            // Handle n8n response (adjusting based on typical n8n responses)
-            // It might be a direct string or a JSON with { output: "..." }
-            let responseContent = '';
-            if (typeof data === 'string') {
-                responseContent = data;
-            } else if (data.output) {
-                responseContent = data.output;
-            } else if (Array.isArray(data) && data[0]?.output) {
-                responseContent = data[0].output;
-            } else if (data.text) {
-                responseContent = data.text;
+            // Handle multiple responses (array) or single response
+            if (Array.isArray(data)) {
+                for (const item of data) {
+                    const content = item.output || item.text || JSON.stringify(item);
+                    await addMessageWithDelay(content, 'ai');
+                }
             } else {
-                responseContent = JSON.stringify(data, null, 2);
+                const content = data.output || data.text || (typeof data === 'string' ? data : JSON.stringify(data));
+                addMessage(content, 'ai');
             }
 
-            addMessage(responseContent, 'ai');
         } catch (error) {
-            console.error('Error fetching from n8n:', error);
+            console.error('Fetch Error:', error);
             removeTypingIndicator(typingId);
-            addMessage("I'm sorry, I'm having trouble connecting to my brain right now. Please try again later.", 'ai');
+            
+            let errMsg = "I'm sorry, I'm having trouble connecting to my brain. ";
+            if (error.message.includes('Failed to fetch')) {
+                errMsg += "This is likely a CORS issue in n8n. Please ensure 'Allowed Origins' is set to '*' in your n8n Webhook node.";
+            } else {
+                errMsg += "Technical Error: " + error.message;
+            }
+            addMessage(errMsg, 'ai');
         }
+    }
+
+    async function addMessageWithDelay(content, sender) {
+        return new Promise(resolve => {
+            setTimeout(() => {
+                addMessage(content, sender);
+                resolve();
+            }, 500);
+        });
     }
 
     function addMessage(content, sender) {
         const messageDiv = document.createElement('div');
         messageDiv.classList.add('message', sender);
         
-        // Basic Markdown-like parsing for bold and code backticks
-        // In a production environment, you might want to use a real markdown library like 'marked'
-        let formattedContent = content
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/`(.*?)`/g, '<code>$1</code>')
-            .replace(/\n/g, '<br>');
-            
-        messageDiv.innerHTML = formattedContent;
-        chatContainer.appendChild(messageDiv);
+        // Smart Formatting for combined model responses
+        if (sender === 'ai' && content.includes('**')) {
+            messageDiv.innerHTML = formatAiResponse(content);
+        } else {
+            messageDiv.innerHTML = content
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/`(.*?)`/g, '<code>$1</code>')
+                .replace(/\n/g, '<br>');
+        }
         
-        // Scroll to bottom
+        chatContainer.appendChild(messageDiv);
         chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    function formatAiResponse(content) {
+        // Detect if content has model headers
+        const sections = content.split(/\*\*(OpenRouter|Groq|Gemini|AI):\*\*/gi).filter(s => s.trim());
+        
+        if (sections.length > 1) {
+            let html = '';
+            for (let i = 0; i < sections.length; i += 2) {
+                const title = sections[i];
+                const text = sections[i+1] || "";
+                if (text.trim()) {
+                    html += `
+                        <div class="ai-response-card">
+                            <div class="model-tag">${title}</div>
+                            <div class="model-content">${text.trim().replace(/\n/g, '<br>')}</div>
+                        </div>
+                    `;
+                }
+            }
+            return html;
+        }
+        return content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
     }
 
     function showTypingIndicator() {
@@ -104,11 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const typingDiv = document.createElement('div');
         typingDiv.id = id;
         typingDiv.classList.add('message', 'ai', 'typing');
-        typingDiv.innerHTML = `
-            <div class="dot"></div>
-            <div class="dot"></div>
-            <div class="dot"></div>
-        `;
+        typingDiv.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
         chatContainer.appendChild(typingDiv);
         chatContainer.scrollTop = chatContainer.scrollHeight;
         return id;
@@ -119,38 +143,20 @@ document.addEventListener('DOMContentLoaded', () => {
         if (el) el.remove();
     }
 
-    // Controls Logic
-    clearChatBtn.addEventListener('click', () => {
-        if (confirm('Are you sure you want to clear the chat?')) {
-            chatContainer.innerHTML = `
-                <div class="message ai">
-                    Chat history cleared. How can I help you from here?
-                </div>
-            `;
-        }
-    });
-
+    // Toggle Fullscreen
     toggleFullscreenBtn.addEventListener('click', () => {
         if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen().catch(e => {
-                console.error(`Error attempting to enable full-screen mode: ${e.message} (${e.name})`);
-            });
+            document.documentElement.requestFullscreen();
             app.classList.add('fullscreen');
-            toggleFullscreenBtn.innerHTML = '<i data-lucide="minimize"></i>';
         } else {
             document.exitFullscreen();
             app.classList.remove('fullscreen');
-            toggleFullscreenBtn.innerHTML = '<i data-lucide="maximize"></i>';
         }
-        lucide.createIcons();
     });
 
-    // Handle Esc key to exit fullscreen
-    document.addEventListener('fullscreenchange', () => {
-        if (!document.fullscreenElement) {
-            app.classList.remove('fullscreen');
-            toggleFullscreenBtn.innerHTML = '<i data-lucide="maximize"></i>';
-            lucide.createIcons();
+    clearChatBtn.addEventListener('click', () => {
+        if (confirm('Clear chat?')) {
+            chatContainer.innerHTML = '<div class="message ai">History cleared. How can I help?</div>';
         }
     });
 });
