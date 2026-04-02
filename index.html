@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Hub | Multi-Model Chatbot</title>
+    <meta name="description" content="Experience the power of multiple AI models in one place. Gemini, Groq, and OpenRouter at your fingertips.">
+    <link rel="stylesheet" href="style.css">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header>
+            <div class="brand">
+                <i id="header-icon" data-lucide="bot" style="color: #4f46e5;"></i>
+                <h1>AI Universe</h1>
+                <div class="model-badges">
+                    <span class="badge gemini">Gemini</span>
+                    <span class="badge groq">Groq</span>
+                    <span class="badge openrouter">OpenRouter</span>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button id="toggle-fullscreen" class="btn-icon" title="Toggle Fullscreen">
+                    <i data-lucide="maximize"></i>
+                </button>
+                <button id="clear-chat" class="btn-icon" title="Clear Chat History">
+                    <i data-lucide="rotate-ccw"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Chat Container -->
+        <div id="chat-container">
+            <!-- Initial AI Welcome -->
+            <div class="message ai">
+                Hello! I'm your Multimodal AI assistant. You can ask me anything, and I'll use Gemini, Groq, and OpenRouter to find the best answer for you. How can I help today?
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="input-area">
+            <div class="input-wrapper">
+                <textarea id="user-input" placeholder="Ask your question here..." rows="1"></textarea>
+                <button id="send-btn" class="send-btn">
+                    <i data-lucide="send"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="script.js"></script>
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>
