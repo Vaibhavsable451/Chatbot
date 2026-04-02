@@ -1,0 +1,417 @@
+{
+  "name": "Multi-AI Chatbot Integration with Claude, Groq, and Gemini",
+  "nodes": [
+    {
+      "parameters": {
+        "model": "llama-3.1-8b-instant",
+        "options": {}
+      },
+      "id": "05cc21b3-51b0-45b2-9936-91989b6d3f35",
+      "name": "Groq Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        304,
+        928
+      ],
+      "credentials": {
+        "groqApi": {
+          "id": "geW3tXXMAPhkguHd",
+          "name": "Groq account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "b60b064a-d645-4149-afb4-2ce0cbfbd8fa",
+      "name": "Gemini Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        304,
+        1440
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "ntYGcSJGfFl7vHKo",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "id": "7c6f511e-e298-4308-8b0e-091ffa52dbc9",
+      "name": "Combine Responses",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        576,
+        528
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "=output",
+              "value": "=={{ \n\"**Groq:** \" + ($input.all()[0]?.json?.output || \"\") + \"\\n\\n\" +\n\"**Groq:** \" + ($input.all()[1]?.json?.output || \"\") + \"\\n\\n\" +\n\"**Gemini:** \" + ($input.all()[2]?.json?.output || \"\")\n}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3a486ce5-113c-4792-8ad6-e8c7f61df88d",
+      "name": "Format Combined Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        800,
+        544
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chatbot",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "48e6474b-30f8-42c9-90c8-86d7bf81a17b",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        816
+      ],
+      "webhookId": "01028733-6433-4a02-bae0-46a739d104a6"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "97469de1-41f0-419f-b267-155649fc9f7c",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1472,
+        496
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "id-1",
+              "leftValue": "={{ $json.output }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "d99bdb31-6518-4b9b-b0d5-a71ba1fbee17",
+      "name": "Check Response Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1024,
+        544
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "output",
+              "value": "I'm sorry, I'm having trouble connecting to my brain right now. Please try again later.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f1798ed9-90b9-4755-989d-833d03521ab3",
+      "name": "Fallback Error Message",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1280,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.message }}",
+        "options": {
+          "systemMessage": "You are a Groq-powered AI assistant. Provide helpful, accurate responses to user questions."
+        }
+      },
+      "id": "78b327d8-cc42-4608-a3fa-328ad1821550",
+      "name": "Groq Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        224,
+        704
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.message }}",
+        "options": {
+          "systemMessage": "You are Gemini, an AI assistant by Google. Provide helpful, accurate responses to user questions."
+        }
+      },
+      "id": "e701ea59-f17e-4143-af78-6ca32f234203",
+      "name": "Gemini Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        224,
+        1216
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.1-8b-instant",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        304,
+        528
+      ],
+      "id": "136799a8-da60-4722-b5c9-b6a837aeed03",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "dL40uQ3wRhTtlPPC",
+          "name": "Groq account 5"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.message }}",
+        "options": {
+          "systemMessage": "You are an AI assistant powered by OpenRouter. Provide helpful, accurate responses to user questions."
+        }
+      },
+      "id": "a07b6d19-30df-41d5-b7a1-0bf0c136ed1c",
+      "name": "groq agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        224,
+        304
+      ],
+      "onError": "continueErrorOutput"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Groq Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Groq Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Gemini Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine Responses": {
+      "main": [
+        [
+          {
+            "node": "Format Combined Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "groq agent",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Groq Agent",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Gemini Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Combined Response": {
+      "main": [
+        [
+          {
+            "node": "Check Response Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Response Success": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fallback Error Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fallback Error Message": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Agent": {
+      "main": [
+        [
+          {
+            "node": "Combine Responses",
+            "type": "main",
+            "index": 1
+          }
+        ],
+        [
+          {
+            "node": "Fallback Error Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Agent": {
+      "main": [
+        [
+          {
+            "node": "Combine Responses",
+            "type": "main",
+            "index": 2
+          }
+        ],
+        [
+          {
+            "node": "Fallback Error Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "groq agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "groq agent": {
+      "main": [
+        [
+          {
+            "node": "Combine Responses",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fallback Error Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "e943d0d1-3c5e-49c3-a717-cdc1b12a12aa",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "210c2e875e7ca38b02763e19a4d292009e458563999a1b1db5703a62424b6147"
+  },
+  "id": "YnLIgZ5qLQDRqlw3",
+  "tags": []
+}
