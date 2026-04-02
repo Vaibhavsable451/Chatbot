@@ -10,7 +10,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Production Webhook URL
     const N8N_WEBHOOK_URL = 'https://vaibhavds.app.n8n.cloud/webhook/chatbot';
 
-
     // Auto resize textarea
     userInput.addEventListener('input', () => {
         userInput.style.height = 'auto';
@@ -18,13 +17,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 
-    // Send message on Enter
+    // High-priority Enter key listener (Priority: True for captures)
     userInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
+        if ((e.key === 'Enter' || e.keyCode === 13) && !e.shiftKey) {
             e.preventDefault();
             sendMessage();
         }
-    });
+    }, true);
 
 
     sendBtn.addEventListener('click', sendMessage);
@@ -34,6 +33,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const text = userInput.value.trim();
         if (!text) return;
+
+        // Disable input while sending
+        userInput.disabled = true;
+        sendBtn.disabled = true;
+        sendBtn.style.opacity = '0.5';
 
         addMessage(text, 'user');
 
@@ -59,9 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 removeTypingIndicator(typingId);
 
                 const errorData = await response.text();
-                console.error("n8n Error:", errorData);
-
-                throw new Error(`Server returned ${response.status}`);
+                throw new Error(`Server error: ${response.status}`);
             }
 
             let data;
@@ -88,8 +90,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     item.text ||
                     item.response ||
                     item.message ||
-                    item.data ? .output ||
-                    item.data ? .text ||
+                    item.data?.output ||
+                    item.data?.text ||
                     JSON.stringify(item);
 
                 await addMessageWithDelay(content, 'ai');
@@ -101,18 +103,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
             removeTypingIndicator(typingId);
 
-            let errMsg = "⚠️ Unable to connect to AI service. ";
+            let errMsg = "⚠️ Network issue. ";
 
             if (error.message.includes("Failed to fetch")) {
-
-                errMsg += "Possible CORS issue. Check n8n webhook Allowed Origins = *";
-
+                errMsg += "Check if n8n has 'Allowed Origins: *' set.";
             } else {
-
                 errMsg += error.message;
             }
 
             addMessage(errMsg, 'ai');
+        } finally {
+            // Re-enable input
+            userInput.disabled = false;
+            sendBtn.disabled = false;
+            sendBtn.style.opacity = '1';
+            userInput.focus();
         }
     }
 
@@ -253,27 +258,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     toggleFullscreenBtn.addEventListener("click", () => {
-
         if (!document.fullscreenElement) {
-
             document.documentElement.requestFullscreen();
-
             app.classList.add("fullscreen");
-
         } else {
-
             document.exitFullscreen();
-
             app.classList.remove("fullscreen");
         }
     });
 
-
-
     clearChatBtn.addEventListener("click", () => {
-
         if (confirm("Clear chat?")) {
-
             chatContainer.innerHTML =
                 '<div class="message ai">History cleared. How can I help?</div>';
         }
