@@ -1,23 +1,80 @@
-# AI Chatbot Website
+# 🤖 Multi-AI Chatbot Agent Website  
+### Gemini + Groq + OpenRouter + n8n Workflow Automation
 
-A premium, full-screen AI chatbot interface designed with a focus on Gemini, Groq, and OpenRouter integration.
+A modern **Multi-AI Agent Chatbot Web Application** that integrates multiple LLM providers (Gemini, Groq, OpenRouter) using **n8n workflow orchestration** and a custom frontend interface.
 
-## Features
-- **Modern UI**: Glassmorphism and dark mode aesthetics.
-- **Multimodal**: Connects to an n8n webhook (`https://vaibhavds.app.n8n.cloud/webhook/chatbot`).
-- **Interactive**: Bubble messages, typing indicators, and real-time responses.
-- **Full-Screen Mode**: Immersive AI interaction experience.
-- **Responsive**: Fully optimized for desktop and mobile devices.
+This project demonstrates how to build a **production-ready AI agent system** capable of routing prompts across multiple AI models and returning structured responses to a web interface.
 
-## How to Run
-Simply open `index.html` in any modern web browser.
+---
 
-## Customization
-- **Backend**: The chatbot currently connects to the production n8n webhook. You can modify the `N8N_WEBHOOK_URL` in `script.js` to point to a different endpoint.
-- **Styling**: Update `style.css` to change the color palette (using CSS variables).
-- **Icons**: Uses Lucide icons (included via CDN).
+# 🚀 Features
 
-## AI Models
-- **Google Gemini**: Integrated for multi-turn reasoning and advanced creative tasks.
-- **Groq**: Integrated for ultra-fast response times and low latency.
-- **OpenRouter**: Integrated for versatile model access and broad model support.
+✅ Multi-model AI integration  
+✅ Gemini Agent support  
+✅ Groq Agent support  
+✅ OpenRouter Agent support  
+✅ n8n workflow orchestration  
+✅ Webhook-based real-time communication  
+✅ Model response formatting system  
+✅ Multi-response card UI rendering  
+✅ Glassmorphism modern UI design  
+✅ Typing animation UX  
+✅ Fullscreen chat mode  
+✅ Production webhook deployment (n8n cloud)
+
+---
+
+# 🧠 Architecture Overview
+
+User Input (Website)
+↓
+Webhook Trigger (n8n)
+↓
+Groq Agent
+Gemini Agent
+OpenRouter Agent
+↓
+Combine Responses Node
+↓
+Format Combined Response
+↓
+Respond to Webhook
+↓
+Frontend Chat UI Rendering
+
+---
+
+# 🏗 Tech Stack
+
+## Frontend
+- HTML5
+- CSS3 (Glassmorphism UI)
+- Vanilla JavaScript
+
+## Backend Orchestration
+- n8n Workflow Automation
+- Webhook API Integration
+
+## AI Providers
+- Google Gemini
+- Groq LLM
+- OpenRouter Models
+
+---
+
+# 📂 Workflow Pipeline (n8n)
+
+Webhook → Multi-Agent Execution → Response Merge → Output Formatting → Webhook Response
+
+This workflow enables:
+
+• parallel AI execution  
+• structured output formatting  
+• fallback handling  
+• response validation  
+
+---
+
+# 🌐 Live Chat Flow Example
+
+User Input:
